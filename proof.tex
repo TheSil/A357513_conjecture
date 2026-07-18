@@ -1,0 +1,243 @@
+\documentclass[11pt,reqno]{amsart}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue]{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\Z}{\mathbb Z}
+\newcommand{\Fp}{\mathbb F_p}
+\newcommand{\Zloc}{\mathbb Z_{(p)}}
+\DeclareMathOperator{\Num}{Num}
+
+\title{A Prime-Power Congruence for an Odd-Exponent Binomial Family}
+\author{}
+\date{}
+
+\begin{document}
+
+\begin{abstract}
+For a nonnegative integer $m$, define
+$$
+ u_m(n)=\Num\left(
+ \sum_{k=1}^{n}\frac{1}{k^{2m+1}}
+ \binom{n}{k}^{2}\binom{n+k}{k}^{2}
+ \right),
+$$
+where the numerator is taken after reducing the rational number to
+lowest terms.  The conjecture treated here originates in the record for
+\href{https://oeis.org/A357513}{OEIS A357513}, which states this
+parameterized form.  We determine exactly when $p^4$ divides
+$u_m(p-1)$.
+For every prime $p$,
+$$
+ p^4\mid u_m(p-1)
+ \quad\Longleftrightarrow\quad
+ p-1\nmid 2m+4\ \text{ or }\ p\mid 2m+7.
+$$
+Consequently, for each fixed $m$ there are only finitely many
+exceptional primes; every such prime is at most $2m+5$.
+\end{abstract}
+
+\maketitle
+
+\section{Statement}
+
+The summation begins at $k=1$.  A version beginning at $k=0$ is not
+defined because its first summand contains $1/0^{2m+1}$.
+
+For a fixed nonnegative integer $m$, put
+$$
+ \mathcal E_m=
+ \left\{p\ \text{prime}:
+ p-1\mid 2m+4\ \text{and}\ p\nmid 2m+7\right\}.
+$$
+
+\begin{theorem}\label{thm:main}
+Let $m\geq0$ be an integer and let $p$ be prime.  Then
+$$
+ p^4\mid u_m(p-1)
+ \quad\Longleftrightarrow\quad
+ p\notin\mathcal E_m.
+$$
+Moreover, $\mathcal E_m$ is finite and is contained in the primes at
+most $2m+5$.  If $p\in\mathcal E_m$, then
+$$
+ v_p\bigl(u_m(p-1)\bigr)=
+ \begin{cases}
+  2,&p=2,\\
+  3,&p\ \text{is odd}.
+ \end{cases}
+$$
+\end{theorem}
+
+\section{Common denominators}
+
+Fix $m$, and write
+$$
+ d=2m+1.
+$$
+For a prime $p$, let
+$$
+ S_{m,p}=\sum_{k=1}^{p-1}\frac{1}{k^d}
+ \binom{p-1}{k}^{2}\binom{p-1+k}{k}^{2}.
+$$
+When $p$ is odd, we work in the local ring
+$$
+ \Zloc=\left\{\frac{a}{b}:a,b\in\Z,\ p\nmid b\right\}.
+$$
+
+The reduced denominator of $S_{m,p}$ is coprime to $p$.  Indeed, set
+$$
+ D_m=((p-1)!)^d
+$$
+and
+$$
+ N_m=\sum_{k=1}^{p-1}
+ \left(\binom{p-1}{k}\binom{p-1+k}{k}\right)^2
+ \frac{D_m}{k^d}.
+$$
+Since $k\mid(p-1)!$ for $1\leq k\leq p-1$, every $D_m/k^d$ is an
+integer.  Thus $N_m\in\Z$, $S_{m,p}=N_m/D_m$, and $p\nmid D_m$.
+
+Suppose that $S_{m,p}=A/B$ in lowest terms.  Cross-multiplication gives
+$AD_m=N_mB$.  Since $gcd(A,B)=1$, Euclid's lemma gives $Bmid D_m$.
+In particular, $p
+mid B$.  Thus both $B$ and $D_m$ are $p$-adic
+units, so for every $rgeq0$,
+\begin{equation}\label{eq:num-equiv}
+ p^r\mid A
+ \quad\Longleftrightarrow\quad
+ S_{m,p}\equiv0\pmod{p^r}.
+\end{equation}
+In particular, a congruence for $S_{m,p}$ transfers directly to the
+reduced numerator $u_m(p-1)$.
+
+\section{The modular reduction}
+
+For $1\leq k\leq p-1$, the exact identities
+\begin{align*}
+ \binom{p-1}{k}
+ &=(-1)^k\prod_{j=1}^{k}\left(1-\frac pj\right),\\
+ \binom{p-1+k}{k}
+ &=\frac pk\prod_{j=1}^{k-1}\left(1+\frac pj\right)
+\end{align*}
+give
+\begin{equation}\label{eq:binom-product}
+ \binom{p-1}{k}\binom{p-1+k}{k}
+ =(-1)^k\frac pk\left(1-\frac pk\right)
+ \prod_{j=1}^{k-1}\left(1-\frac{p^2}{j^2}\right).
+\end{equation}
+After squaring \eqref{eq:binom-product} and dividing by $k^d$, the
+$k$th summand of $S_{m,p}$ is
+$$
+ \frac{p^2}{k^{d+2}}\left(1-\frac pk\right)^2
+ \prod_{j=1}^{k-1}\left(1-\frac{p^2}{j^2}\right)^2.
+$$
+All denominators are units in $\Zloc$, and
+$$
+ \prod_{j=1}^{k-1}\left(1-\frac{p^2}{j^2}\right)^2
+ \equiv1\pmod{p^2}.
+$$
+The displayed summand already contains $p^2$.  Hence, modulo $p^4$, it
+is congruent to
+$$
+ \frac{p^2}{k^{d+2}}-\frac{2p^3}{k^{d+3}}.
+$$
+
+Put
+$$
+ r=d+2=2m+3,\qquad e=d+3=2m+4
+$$
+and define
+$$
+ H_s=\sum_{k=1}^{p-1}\frac1{k^s}\in\Zloc.
+$$
+Summing the preceding congruence gives
+\begin{equation}\label{eq:first-reduction}
+ S_{m,p}\equiv p^2H_r-2p^3H_e\pmod{p^4}.
+\end{equation}
+
+The exponent $r$ is odd.  Since $k\mapsto p-k$ permutes
+$1,\ldots,p-1$,
+\begin{align*}
+ \frac1{(p-k)^r}
+ &=-\frac1{k^r}\left(1-\frac pk\right)^{-r}\\
+ &\equiv-\frac1{k^r}-\frac{rp}{k^{r+1}}\pmod{p^2}.
+\end{align*}
+Because $r+1=e$, summing over $k$ yields
+\begin{equation}\label{eq:harmonic-pairing}
+ 2H_r+rpH_e\equiv0\pmod{p^2}.
+\end{equation}
+Multiply \eqref{eq:harmonic-pairing} by $p^2$ and double
+\eqref{eq:first-reduction}.  Since $r+4=2m+7$, we obtain
+\begin{equation}\label{eq:key}
+ 2S_{m,p}\equiv-(2m+7)p^3H_e\pmod{p^4}.
+\end{equation}
+
+\section{The finite-field obstruction}
+
+Reduction modulo $p$ and the fact that inversion permutes
+$\Fp^\times$ give
+$$
+ H_e\equiv\sum_{x\in\Fp^\times}x^{-e}
+ =\sum_{x\in\Fp^\times}x^e\pmod p.
+$$
+The standard power-sum evaluation in the cyclic group
+$\Fp^\times$ is
+\begin{equation}\label{eq:power-sum}
+ H_e\equiv
+ \begin{cases}
+  0\pmod p,&p-1\nmid e,\\
+  -1\pmod p,&p-1\mid e.
+ \end{cases}
+\end{equation}
+
+Assume first that $p$ is odd.  Then $2$ is a unit in $\Zloc$.  If
+$p-1\nmid e$, equations \eqref{eq:key} and \eqref{eq:power-sum} give
+$S_{m,p}\equiv0\pmod{p^4}$.  If $p-1\mid e$, those equations instead
+give
+$$
+ 2S_{m,p}\equiv(2m+7)p^3\pmod{p^4}.
+$$
+It follows that
+$$
+ S_{m,p}\equiv0\pmod{p^4}
+ \quad\Longleftrightarrow\quad
+ p\mid2m+7.
+$$
+Together with \eqref{eq:num-equiv}, this proves the asserted
+classification for every odd prime.
+
+For $p=2$, the sum has one term:
+$$
+ S_{m,2}=\binom11^2\binom21^2=4.
+$$
+Thus $u_m(1)=4$, so $2^4\nmid u_m(1)$ and
+$v_2(u_m(1))=2$.  This agrees with the criterion because
+$2-1\mid2m+4$, whereas $2\nmid2m+7$.
+
+It remains to record the valuation at an odd exceptional prime.
+Equation \eqref{eq:harmonic-pairing} shows that $p\mid H_r$ in
+$\Zloc$.  Equation \eqref{eq:first-reduction} therefore gives
+$p^3\mid S_{m,p}$.  On the other hand, if
+$p-1\mid2m+4$ and $p\nmid2m+7$, then \eqref{eq:key} and
+\eqref{eq:power-sum} show that $S_{m,p}\not\equiv0\pmod{p^4}$.
+Consequently
+$$
+ v_p\bigl(u_m(p-1)\bigr)=3.
+$$
+
+Finally, if $p\in\mathcal E_m$, then $p-1$ is a positive divisor of
+$2m+4$.  Therefore
+$$
+ p-1\leq2m+4,\qquad p\leq2m+5.
+$$
+This proves the finiteness assertion and completes the proof of
+Theorem~\ref{thm:main}.
+
+\end{document}
