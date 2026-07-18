@@ -10,7 +10,7 @@ u_m(n)=\mathrm{Num}\left(
 $$
 
 Here the numerator is taken after reducing the rational number to lowest
-terms. The lower endpoint is $k=1$; a $k=0$ term would be undefined.
+terms.
 
 This conjecture is recorded in [OEIS A357513](https://oeis.org/A357513);
 the OEIS entry states the parameterized version treated here.
@@ -30,7 +30,6 @@ $$
 \{p\text{ prime}:p-1\mid2m+4\text{ and }p\nmid2m+7\}.
 $$
 
-It is finite: every $p\in\mathcal E_m$ satisfies $p\le 2m+5$.
 At an exceptional prime, the reduced numerator has valuation $2$ when
 $p=2$, and valuation $3$ when $p$ is odd.
 
