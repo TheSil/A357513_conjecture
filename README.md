@@ -1,6 +1,6 @@
 # Prime-power congruences for odd-exponent binomial sums
 
-For a nonnegative integer $m$, define
+For an integer $m$, define
 
 $$
 u_m(n)=\mathrm{Num}\left(
@@ -12,8 +12,9 @@ $$
 Here the numerator is taken after reducing the rational number to lowest
 terms.
 
-This conjecture is recorded in [OEIS A357513](https://oeis.org/A357513);
-the OEIS entry states the parameterized version treated here.
+The original nonnegative-parameter conjecture is recorded in
+[OEIS A357513](https://oeis.org/A357513). The result here extends the same
+classification to every integer $m$.
 
 The mathematical result proved here is the exact classification
 
@@ -30,6 +31,9 @@ $$
 \{p\text{ prime}:p-1\mid2m+4\text{ and }p\nmid2m+7\}.
 $$
 
+For $m=-2$, this is the set of all primes except $3$; thus the
+exceptional set is not always finite when negative parameters are allowed.
+
 At an exceptional prime, the reduced numerator has valuation $2$ when
 $p=2$, and valuation $3$ when $p$ is odd.
 
@@ -41,6 +45,9 @@ $$
 S_{m,p}=\sum_{k=1}^{p-1}\frac{1}{k^{2m+1}}
 \binom{p-1}{k}^{2}\binom{p-1+k}{k}^{2}.
 $$
+
+The exponents below are integer exponents of the units
+$1,\ldots,p-1$ modulo powers of $p$.
 
 ### 1. Binomial-product reduction
 
@@ -80,9 +87,10 @@ This gives the exact exceptional-prime criterion above.
 
 ### 4. Reduced numerator
 
-The common denominator $D_m=((p-1)!)^{2m+1}$ is coprime to $p$.
-Therefore the modular congruence for $S_{m,p}$ transfers to its reduced
-numerator.
+Put $d=2m+1$, $d_+=\max(d,0)$, and $d_-=\max(-d,0)$. Since
+$1/k^d=k^{d_-}/k^{d_+}$, the common denominator
+$D_m=((p-1)!)^{d_+}$ is coprime to $p$. Therefore the modular congruence
+for $S_{m,p}$ transfers to its reduced numerator.
 
 ## Contents
 
@@ -95,16 +103,18 @@ numerator.
 The formalized exceptional set has the exact membership characterization:
 
 ```lean
-def exceptionalPrimes (m : ℕ) : Finset ℕ :=
-  (Finset.range (2 * m + 6)).filter fun p =>
-    p.Prime ∧ p - 1 ∣ 2 * m + 4 ∧ ¬ p ∣ 2 * m + 7
+def exceptionalPrimes (m : ℤ) : Set ℕ :=
+  {p | p.Prime ∧
+    ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4 ∧
+    ¬ (p : ℤ) ∣ 2 * m + 7}
 ```
 
 The principal formalized theorem is:
 
 ```lean
 theorem u_prime_sub_one_dvd_of_not_mem
-    {m p : ℕ} [Fact p.Prime] (hpnot : p ∉ exceptionalPrimes m) :
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (hpnot : p ∉ exceptionalPrimes m) :
     ((p ^ 4 : ℕ) : ℤ) ∣ u m (p - 1)
 ```
 

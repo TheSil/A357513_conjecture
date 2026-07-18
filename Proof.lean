@@ -12,10 +12,10 @@ import Mathlib.Tactic.Ring
 /-!
 # An odd-exponent family of prime-power congruences
 
-For m ≥ 0, let u m n be the reduced numerator of
+For an integer m, let u m n be the reduced numerator of
 sum k = 1, ..., n, k ^ (-(2*m+1)) * choose(n,k)^2 * choose(n+k,k)^2.
 The file proves that p ^ 4 ∣ u m (p - 1) for every prime outside
-the explicit finite exceptional set exceptionalPrimes m.
+the explicit exceptional set exceptionalPrimes m.
 
 The proof formalizes the exact binomial-product expansion, generalized
 harmonic pairing, finite-field power-sum obstruction, and passage from the
@@ -32,10 +32,6 @@ lemma mem_Icc_coprime_prime {p k : ℕ} [Fact p.Prime]
   rcases Finset.mem_Icc.mp hk with ⟨hk1, hkle⟩
   rw [Nat.coprime_comm, hp.coprime_iff_not_dvd]
   exact Nat.not_dvd_of_pos_of_lt (by omega) (by omega)
-
-/-- The generalized harmonic sum over \`1, ..., p - 1\` in \`ZMod m\`. -/
-def harmonicMod (p m r : ℕ) : ZMod m :=
-  ∑ k ∈ Finset.Icc 1 (p - 1), ((k : ZMod m)⁻¹) ^ r
 
 /-- Reflection of the nonzero representatives by \`k ↦ p - k\`. -/
 def reflectionEquiv (p : ℕ) [Fact p.Prime] :
@@ -62,10 +58,6 @@ def reflectionEquiv (p : ℕ) [Fact p.Prime] :
     simp only
     omega
 
-/--
-The pointwise expansion
-\`(p - k)⁻⁵ = -k⁻⁵ - 5 p k⁻⁶\` in \`ZMod (p²)\`.
--/
 def residueUnitEquiv (p : ℕ) [Fact p.Prime] :
     {k : ℕ // k ∈ Finset.Icc 1 (p - 1)} ≃ (ZMod p)ˣ where
   toFun k := ZMod.unitOfCoprime k.1 (mem_Icc_coprime_prime k.2)
@@ -377,25 +369,45 @@ lemma castHom_inverse_Icc {p k : ℕ} [Fact p.Prime]
     _ = f 1 := by rw [ZMod.mul_inv_of_unit _ hku]
     _ = 1 := by rw [map_one]
 
-/-! ## The odd-exponent generalization -/
 
-/--
-The rational sum with denominator exponent `2m+1`.  The lower endpoint is
-`1`: the informal version with a `k = 0` term is undefined.
--/
-def generalizedSum (m n : ℕ) : ℚ :=
+/-! ## The odd-exponent family -/
+
+/-- The rational sum with exponent 2m+1. -/
+def generalizedSum (m : ℤ) (n : ℕ) : ℚ :=
   ∑ k ∈ Finset.Icc 1 n,
-    ((n.choose k : ℚ) ^ 2 * ((n + k).choose k : ℚ) ^ 2) /
-      (k : ℚ) ^ (2 * m + 1)
+    ((n.choose k : ℚ) ^ 2 * ((n + k).choose k : ℚ) ^ 2) *
+      (k : ℚ) ^ (-(2 * m + 1))
 
-/-- The reduced numerator of `generalizedSum m n`. -/
-def u (m n : ℕ) : ℤ := (generalizedSum m n).num
+/-- The reduced numerator of generalizedSum m n. -/
+def u (m : ℤ) (n : ℕ) : ℤ := (generalizedSum m n).num
 
-/-- The corresponding binomial sum in an arbitrary residue ring. -/
-def generalizedBinomialSumMod (m p modulus : ℕ) : ZMod modulus :=
-  ∑ k ∈ Finset.Icc 1 (p - 1),
-    ((k : ZMod modulus)⁻¹) ^ (2 * m + 1) *
-      (binomialProduct p k modulus) ^ 2
+/-- A representative in 1, ..., p-1, regarded as a unit modulo p^a. -/
+def representativeUnit (p a : ℕ) [Fact p.Prime]
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) : (ZMod (p ^ a))ˣ :=
+  ZMod.unitOfCoprime k.1 ((mem_Icc_coprime_prime k.2).pow_right a)
+
+/-- The generalized harmonic sum with an arbitrary integer exponent. -/
+def harmonicMod (p a : ℕ) [Fact p.Prime] (r : ℤ) : ZMod (p ^ a) :=
+  ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+    ((((representativeUnit p a k)⁻¹) ^ r : (ZMod (p ^ a))ˣ) :
+      ZMod (p ^ a))
+
+/-- The binomial sum modulo p^a. -/
+def generalizedBinomialSumMod (m : ℤ) (p a : ℕ) [Fact p.Prime] :
+    ZMod (p ^ a) :=
+  ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+    (((((representativeUnit p a k)⁻¹) ^ (2 * m + 1) :
+        (ZMod (p ^ a))ˣ) : ZMod (p ^ a)) *
+      (binomialProduct p k.1 (p ^ a)) ^ 2)
+
+/-- The inverse of a representative unit agrees with the ring inverse. -/
+lemma representativeUnit_inv_val {p a : ℕ} [Fact p.Prime]
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) :
+    (((representativeUnit p a k)⁻¹ : (ZMod (p ^ a))ˣ) : ZMod (p ^ a)) =
+      ((k.1 : ZMod (p ^ a))⁻¹) := by
+  symm
+  apply ZMod.inv_eq_of_mul_eq_one
+  simp [representativeUnit, ZMod.coe_unitOfCoprime]
 
 /-- A first-order binomial formula when the increment has square zero. -/
 lemma one_add_pow_of_sq_eq_zero {R : Type*} [CommRing R]
@@ -410,50 +422,120 @@ lemma one_add_pow_of_sq_eq_zero {R : Type*} [CommRing R]
             = 1 + ((n : R) + 1) * x + (n : R) * x ^ 2 := by ring
         _ = 1 + ((n : R) + 1) * x := by rw [hx, mul_zero, add_zero]
 
-/-- Ring-theoretic core of the generalized summand reduction. -/
-lemma generalized_summand_algebra {R : Type*} [CommRing R]
-    (P U s C : R) (d : ℕ)
+/-- The unit 1+x when x²=0. -/
+def oneAddSqZeroUnit {R : Type*} [CommRing R]
+    (x : R) (hx : x ^ 2 = 0) : Rˣ where
+  val := 1 + x
+  inv := 1 - x
+  val_inv := by
+    calc
+      (1 + x) * (1 - x) = 1 - x ^ 2 := by ring
+      _ = 1 := by rw [hx]; ring
+  inv_val := by
+    calc
+      (1 - x) * (1 + x) = 1 - x ^ 2 := by ring
+      _ = 1 := by rw [hx]; ring
+
+/-- First-order expansion of an integer power of 1+x when x²=0. -/
+lemma oneAddSqZeroUnit_zpow_val {R : Type*} [CommRing R]
+    (x : R) (z : ℤ) (hx : x ^ 2 = 0) :
+    (((oneAddSqZeroUnit x hx) ^ z : Rˣ) : R) =
+      1 + (z : R) * x := by
+  cases z with
+  | ofNat n =>
+      rw [Int.ofNat_eq_natCast, zpow_natCast, Units.val_pow_eq_pow_val]
+      push_cast
+      change (1 + x) ^ n = 1 + (n : R) * x
+      exact one_add_pow_of_sq_eq_zero x n hx
+  | negSucc n =>
+      rw [zpow_negSucc]
+      change (1 - x) ^ (n + 1) = _
+      have hneg : (-x) ^ 2 = 0 := by rw [neg_sq, hx]
+      rw [show 1 - x = 1 + (-x) by ring,
+        one_add_pow_of_sq_eq_zero (-x) (n + 1) hneg]
+      push_cast
+      ring
+
+lemma negOne_zpow_two_mul_add_one {R : Type*} [CommRing R] (m : ℤ) :
+    ((-1 : Rˣ) ^ (2 * m + 1)) = -1 := by
+  have hone : (-1 : Rˣ) ^ (1 : ℤ) = -1 := zpow_one _
+  have hsq : (-1 : Rˣ) ^ (2 : ℤ) = 1 := by
+    calc
+      (-1 : Rˣ) ^ (2 : ℤ) = (-1 : Rˣ) ^ ((1 : ℤ) + 1) := by norm_num
+      _ = (-1 : Rˣ) ^ (1 : ℤ) * (-1 : Rˣ) ^ (1 : ℤ) :=
+        zpow_add (-1 : Rˣ) 1 1
+      _ = 1 := by rw [zpow_one]; simp
+  calc
+    (-1 : Rˣ) ^ (2 * m + 1) =
+        (-1 : Rˣ) ^ (2 * m) * (-1 : Rˣ) ^ 1 :=
+          zpow_add (-1 : Rˣ) (2 * m) 1
+    _ = (((-1 : Rˣ) ^ (2 : ℤ)) ^ m) * (-1 : Rˣ) := by
+          rw [hone, ← zpow_mul]
+    _ = -1 := by rw [hsq, one_zpow, one_mul]
+
+/-- Ring-theoretic core of the summand reduction for integer exponents. -/
+lemma generalized_summand_algebra_int {R : Type*} [CommRing R]
+    (P : R) (U : Rˣ) (s C : R) (d : ℤ)
     (hs : s ^ 2 = 1) (hPC : P ^ 2 * C ^ 2 = P ^ 2)
     (hP4 : P ^ 4 = 0) :
-    U ^ d * (s * P * U * (1 - P * U) * C) ^ 2 =
-      P ^ 2 * U ^ (d + 2) - 2 * P ^ 3 * U ^ (d + 3) := by
+    (((U ^ d : Rˣ) : R)) *
+        (s * P * (U : R) * (1 - P * (U : R)) * C) ^ 2 =
+      P ^ 2 * (((U ^ (d + 2) : Rˣ) : R)) -
+        2 * P ^ 3 * (((U ^ (d + 3) : Rˣ) : R)) := by
+  have hU2 :
+      (((U ^ (d + 2) : Rˣ) : R)) =
+        (((U ^ d : Rˣ) : R)) * (U : R) ^ 2 := by
+    rw [zpow_add]
+    norm_num [zpow_ofNat, Units.val_pow_eq_pow_val]
+  have hU3 :
+      (((U ^ (d + 3) : Rˣ) : R)) =
+        (((U ^ d : Rˣ) : R)) * (U : R) ^ 3 := by
+    rw [zpow_add]
+    norm_num [zpow_ofNat, Units.val_pow_eq_pow_val]
+  rw [hU2, hU3]
   calc
-    U ^ d * (s * P * U * (1 - P * U) * C) ^ 2 =
-        (s ^ 2) * (P ^ 2 * C ^ 2) * (U ^ d * U ^ 2) *
-          (1 - P * U) ^ 2 := by ring
-    _ = P ^ 2 * U ^ (d + 2) * (1 - P * U) ^ 2 := by
-      rw [hs, hPC, one_mul, ← pow_add]
-    _ = P ^ 2 * U ^ (d + 2) - 2 * P ^ 3 * U ^ (d + 3) +
-          P ^ 4 * U ^ (d + 4) := by
-      rw [show d + 3 = (d + 2) + 1 by omega,
-        show d + 4 = (d + 2) + 2 by omega, pow_succ, pow_add]
-      ring
-    _ = P ^ 2 * U ^ (d + 2) - 2 * P ^ 3 * U ^ (d + 3) := by
-      rw [hP4, zero_mul, add_zero]
+    (((U ^ d : Rˣ) : R)) *
+        (s * P * (U : R) * (1 - P * (U : R)) * C) ^ 2 =
+      (s ^ 2) * (P ^ 2 * C ^ 2) *
+        ((((U ^ d : Rˣ) : R)) * (U : R) ^ 2) *
+          (1 - P * (U : R)) ^ 2 := by ring
+    _ = P ^ 2 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 2) *
+          (1 - P * (U : R)) ^ 2 := by rw [hs, hPC, one_mul]
+    _ = P ^ 2 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 2) -
+          2 * P ^ 3 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 3) +
+          P ^ 4 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 4) := by ring
+    _ = P ^ 2 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 2) -
+          2 * P ^ 3 * ((((U ^ d : Rˣ) : R)) * (U : R) ^ 3) := by
+            rw [hP4, zero_mul, add_zero]
 
-/-- A generalized summand, reduced modulo `p⁴`. -/
-lemma generalized_binomial_summand_reduction {m p k : ℕ} [Fact p.Prime]
-    (hk : k ∈ Finset.Icc 1 (p - 1)) :
-    ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 1) *
-        (binomialProduct p k (p ^ 4)) ^ 2 =
+
+/-- A single summand reduced modulo p⁴. -/
+lemma generalized_binomial_summand_reduction {m : ℤ} {p : ℕ}
+    [Fact p.Prime]
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) :
+    ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 1) :
+        (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) *
+        (binomialProduct p k.1 (p ^ 4)) ^ 2 =
       (p : ZMod (p ^ 4)) ^ 2 *
-          ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 3) -
+          ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 3) :
+            (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) -
         2 * (p : ZMod (p ^ 4)) ^ 3 *
-          ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 4) := by
+          ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 4) :
+            (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) := by
   let P : ZMod (p ^ 4) := p
-  let U : ZMod (p ^ 4) := (k : ZMod (p ^ 4))⁻¹
-  let C : ZMod (p ^ 4) := correctionProd p k (p ^ 4)
+  let U : (ZMod (p ^ 4))ˣ := (representativeUnit p 4 k)⁻¹
+  let C : ZMod (p ^ 4) := correctionProd p k.1 (p ^ 4)
   have hP4 : P ^ 4 = 0 := by
     dsimp [P]
     rw [← Nat.cast_pow, ZMod.natCast_self]
-  have hsign : ((-1 : ZMod (p ^ 4)) ^ k) ^ 2 = 1 := by
+  have hsign : ((-1 : ZMod (p ^ 4)) ^ k.1) ^ 2 = 1 := by
     calc
-      ((-1 : ZMod (p ^ 4)) ^ k) ^ 2 =
-          (-1 : ZMod (p ^ 4)) ^ (k * 2) := (pow_mul _ _ _).symm
-      _ = (-1 : ZMod (p ^ 4)) ^ (2 * k) := by rw [Nat.mul_comm]
-      _ = ((-1 : ZMod (p ^ 4)) ^ 2) ^ k := pow_mul _ _ _
+      ((-1 : ZMod (p ^ 4)) ^ k.1) ^ 2 =
+          (-1 : ZMod (p ^ 4)) ^ (k.1 * 2) := (pow_mul _ _ _).symm
+      _ = (-1 : ZMod (p ^ 4)) ^ (2 * k.1) := by rw [Nat.mul_comm]
+      _ = ((-1 : ZMod (p ^ 4)) ^ 2) ^ k.1 := pow_mul _ _ _
       _ = 1 := by norm_num
-  rcases correctionProd_eq_one_add p k with ⟨T, hCraw⟩
+  rcases correctionProd_eq_one_add p k.1 with ⟨T, hCraw⟩
   have hC : C = 1 + P ^ 2 * T := hCraw
   have hPC : P ^ 2 * C ^ 2 = P ^ 2 := by
     rw [hC]
@@ -461,157 +543,200 @@ lemma generalized_binomial_summand_reduction {m p k : ℕ} [Fact p.Prime]
       P ^ 2 * (1 + P ^ 2 * T) ^ 2 =
           P ^ 2 + P ^ 4 * (2 * T + P ^ 2 * T ^ 2) := by ring
       _ = P ^ 2 := by rw [hP4]; ring
-  rw [binomialProduct_eq_closed hk, binomialClosed]
-  change
-    U ^ (2 * m + 1) *
-        (((-1 : ZMod (p ^ 4)) ^ k * P * U * (1 - P * U) * C) ^ 2) =
-      P ^ 2 * U ^ (2 * m + 3) - 2 * P ^ 3 * U ^ (2 * m + 4)
-  simpa only [show 2 * m + 1 + 2 = 2 * m + 3 by omega,
-      show 2 * m + 1 + 3 = 2 * m + 4 by omega] using
-    generalized_summand_algebra P U ((-1 : ZMod (p ^ 4)) ^ k) C
-      (2 * m + 1) hsign hPC hP4
+  have hUval :
+      (U : ZMod (p ^ 4)) = ((k.1 : ZMod (p ^ 4))⁻¹) :=
+    representativeUnit_inv_val k
+  rw [binomialProduct_eq_closed k.2, binomialClosed]
+  have hAlg := generalized_summand_algebra_int P U
+    ((-1 : ZMod (p ^ 4)) ^ k.1) C (2 * m + 1) hsign hPC hP4
+  simpa only [P, U, C, hUval,
+    show 2 * m + 1 + 2 = 2 * m + 3 by ring,
+    show 2 * m + 1 + 3 = 2 * m + 4 by ring] using hAlg
 
-/-- Summing the pointwise reduction gives two generalized harmonic sums. -/
-theorem generalizedBinomialSumMod_reduction {m p : ℕ} [Fact p.Prime] :
-    generalizedBinomialSumMod m p (p ^ 4) =
-      (p : ZMod (p ^ 4)) ^ 2 * harmonicMod p (p ^ 4) (2 * m + 3) -
+/-- Summing the pointwise reduction gives two harmonic sums. -/
+theorem generalizedBinomialSumMod_reduction {m : ℤ} {p : ℕ}
+    [Fact p.Prime] :
+    generalizedBinomialSumMod m p 4 =
+      (p : ZMod (p ^ 4)) ^ 2 * harmonicMod p 4 (2 * m + 3) -
         2 * (p : ZMod (p ^ 4)) ^ 3 *
-          harmonicMod p (p ^ 4) (2 * m + 4) := by
+          harmonicMod p 4 (2 * m + 4) := by
   rw [generalizedBinomialSumMod, harmonicMod]
   calc
-    (∑ k ∈ Finset.Icc 1 (p - 1),
-        ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 1) *
-          (binomialProduct p k (p ^ 4)) ^ 2) =
-      ∑ k ∈ Finset.Icc 1 (p - 1),
+    (∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+      ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 1) :
+          (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) *
+        (binomialProduct p k.1 (p ^ 4)) ^ 2) =
+      ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
         ((p : ZMod (p ^ 4)) ^ 2 *
-            ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 3) -
+            ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 3) :
+              (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) -
           2 * (p : ZMod (p ^ 4)) ^ 3 *
-            ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 4)) := by
+            ((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 4) :
+              (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4))) := by
           apply Finset.sum_congr rfl
-          intro k hk
-          exact generalized_binomial_summand_reduction hk
-    _ = (p : ZMod (p ^ 4)) ^ 2 *
-          (∑ k ∈ Finset.Icc 1 (p - 1),
-            ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 3)) -
-        2 * (p : ZMod (p ^ 4)) ^ 3 *
-          (∑ k ∈ Finset.Icc 1 (p - 1),
-            ((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 4)) := by
-              rw [Finset.sum_sub_distrib, ← Finset.mul_sum,
-                ← Finset.mul_sum]
+          intro k _
+          exact generalized_binomial_summand_reduction k
+    _ = _ := by
+      rw [Finset.sum_sub_distrib, ← Finset.mul_sum, ← Finset.mul_sum, harmonicMod]
 
-/-! ### Generalized harmonic pairing -/
 
-/-- First-order expansion of an arbitrary odd power. -/
-lemma odd_power_first_order {R : Type*} [CommRing R]
-    (P U : R) (m : ℕ) (hP2 : P ^ 2 = 0) :
-    (-U - P * U ^ 2) ^ (2 * m + 3) =
-      -U ^ (2 * m + 3) -
-        ((2 * m + 3 : ℕ) : R) * P * U ^ (2 * m + 4) := by
-  have hx : (P * U) ^ 2 = 0 := by
-    rw [mul_pow, hP2, zero_mul]
-  have hsign : (-1 : R) ^ (2 * m + 3) = -1 := by
-    rw [show 2 * m + 3 = 2 * (m + 1) + 1 by omega,
-      pow_succ, pow_mul]
-    norm_num
-  calc
-    (-U - P * U ^ 2) ^ (2 * m + 3) =
-        ((-U) * (1 + P * U)) ^ (2 * m + 3) := by
-          congr 1
-          ring
-    _ = (-U) ^ (2 * m + 3) * (1 + P * U) ^ (2 * m + 3) := by
-          rw [mul_pow]
-    _ = -U ^ (2 * m + 3) *
-          (1 + ((2 * m + 3 : ℕ) : R) * (P * U)) := by
-          rw [one_add_pow_of_sq_eq_zero (P * U) (2 * m + 3) hx]
-          rw [neg_pow, hsign]
-          ring
-    _ = -U ^ (2 * m + 3) -
-        ((2 * m + 3 : ℕ) : R) * P * U ^ (2 * m + 4) := by
-          rw [show 2 * m + 4 = (2 * m + 3) + 1 by omega, pow_succ]
-          ring
+/-- First-order expansion of an arbitrary odd integer power. -/
+lemma odd_zpow_first_order {R : Type*} [CommRing R]
+    (P : R) (U : Rˣ) (m : ℤ) (hP2 : P ^ 2 = 0) :
+    (((((-1 : Rˣ) * U *
+        oneAddSqZeroUnit (P * (U : R)) (by
+          rw [mul_pow, hP2, zero_mul])) ^ (2 * m + 3) : Rˣ) : R)) =
+      -(((U ^ (2 * m + 3) : Rˣ) : R)) -
+        ((2 * m + 3 : ℤ) : R) * P *
+          (((U ^ (2 * m + 4) : Rˣ) : R)) := by
+  let A : Rˣ := oneAddSqZeroUnit (P * (U : R)) (by
+    rw [mul_pow, hP2, zero_mul])
+  have hsign : (-1 : Rˣ) ^ (2 * m + 3) = -1 := by
+    convert negOne_zpow_two_mul_add_one (R := R) (m + 1) using 1
+    all_goals ring_nf
+  have hA :
+      (((A ^ (2 * m + 3) : Rˣ) : R)) =
+        1 + ((2 * m + 3 : ℤ) : R) * (P * (U : R)) := by
+    exact oneAddSqZeroUnit_zpow_val _ _ _
+  have hz := congrArg (fun x : Rˣ => (x : R))
+    (zpow_add U (2 * m + 3) 1)
+  change
+    (((U ^ (2 * m + 3 + 1) : Rˣ) : R)) =
+      (((U ^ (2 * m + 3) : Rˣ) : R)) *
+        (((U ^ (1 : ℤ) : Rˣ) : R)) at hz
+  rw [zpow_one] at hz
+  have hUnext :
+      (((U ^ (2 * m + 4) : Rˣ) : R)) =
+        (((U ^ (2 * m + 3) : Rˣ) : R)) * (U : R) := by
+    convert hz using 1
+    all_goals ring_nf
+  change (((((-1 : Rˣ) * U * A) ^ (2 * m + 3) : Rˣ) : R)) = _
+  rw [mul_zpow, mul_zpow, hsign]
+  change
+    (-1 : R) * (((U ^ (2 * m + 3) : Rˣ) : R)) *
+      (((A ^ (2 * m + 3) : Rˣ) : R)) = _
+  rw [hA, hUnext]
+  ring
 
-/-- The pointwise reflection formula in `ZMod (p²)`. -/
-lemma paired_inverse_odd {m p k : ℕ} [Fact p.Prime]
-    (hk : k ∈ Finset.Icc 1 (p - 1)) :
-    (((p - k : ℕ) : ZMod (p ^ 2))⁻¹) ^ (2 * m + 3) =
-      -((k : ZMod (p ^ 2))⁻¹) ^ (2 * m + 3) -
-        ((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-          ((k : ZMod (p ^ 2))⁻¹) ^ (2 * m + 4) := by
+/-- The pointwise reflection formula in ZMod (p²). -/
+lemma paired_inverse_odd {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) :
+    ((((representativeUnit p 2 (reflectionEquiv p k))⁻¹) ^
+        (2 * m + 3) : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) =
+      -((((representativeUnit p 2 k)⁻¹) ^ (2 * m + 3) :
+        (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) -
+        ((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+          ((((representativeUnit p 2 k)⁻¹) ^ (2 * m + 4) :
+            (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) := by
   let P : ZMod (p ^ 2) := p
-  let K : ZMod (p ^ 2) := k
-  let U : ZMod (p ^ 2) := K⁻¹
-  have hk_bounds := Finset.mem_Icc.mp hk
-  have hk_le : k ≤ p := by omega
-  have hk_unit : IsUnit K := by
-    rw [ZMod.isUnit_iff_coprime]
-    exact (mem_Icc_coprime_prime hk).pow_right 2
+  let K : (ZMod (p ^ 2))ˣ := representativeUnit p 2 k
+  let U : (ZMod (p ^ 2))ˣ := K⁻¹
+  let V : (ZMod (p ^ 2))ˣ :=
+    (representativeUnit p 2 (reflectionEquiv p k))⁻¹
+  have hk_bounds := Finset.mem_Icc.mp k.2
+  have hk_le : k.1 ≤ p := by omega
   have hP2 : P ^ 2 = 0 := by
     dsimp [P]
     rw [← Nat.cast_pow, ZMod.natCast_self]
-  have hKU : K * U = 1 := ZMod.mul_inv_of_unit K hk_unit
-  have hcast : ((p - k : ℕ) : ZMod (p ^ 2)) = P - K := by
-    dsimp [P, K]
+  have hUval : (U : ZMod (p ^ 2)) = ((k.1 : ZMod (p ^ 2))⁻¹) :=
+    representativeUnit_inv_val k
+  have hVval :
+      (V : ZMod (p ^ 2)) =
+        (((p - k.1 : ℕ) : ZMod (p ^ 2))⁻¹) := by
+    exact representativeUnit_inv_val (reflectionEquiv p k)
+  have hcast : ((p - k.1 : ℕ) : ZMod (p ^ 2)) =
+      P - (k.1 : ZMod (p ^ 2)) := by
+    dsimp [P]
     rw [Nat.cast_sub hk_le]
-  have hinv : ((p - k : ℕ) : ZMod (p ^ 2))⁻¹ = -U - P * U ^ 2 := by
+  have hKU :
+      (k.1 : ZMod (p ^ 2)) * (U : ZMod (p ^ 2)) = 1 := by
+    rw [hUval]
+    apply ZMod.mul_inv_of_unit
+    change IsUnit (k.1 : ZMod (p ^ 2))
+    rw [ZMod.isUnit_iff_coprime]
+    exact (mem_Icc_coprime_prime k.2).pow_right 2
+  have hinv :
+      (((p - k.1 : ℕ) : ZMod (p ^ 2))⁻¹) =
+        -(U : ZMod (p ^ 2)) - P * (U : ZMod (p ^ 2)) ^ 2 := by
     apply ZMod.inv_eq_of_mul_eq_one
     rw [hcast]
     calc
-      (P - K) * (-U - P * U ^ 2)
-          = K * U + P * U * (K * U - 1) - P ^ 2 * U ^ 2 := by ring
+      (P - (k.1 : ZMod (p ^ 2))) *
+          (-(U : ZMod (p ^ 2)) - P * (U : ZMod (p ^ 2)) ^ 2) =
+        (k.1 : ZMod (p ^ 2)) * (U : ZMod (p ^ 2)) +
+          P * (U : ZMod (p ^ 2)) *
+            ((k.1 : ZMod (p ^ 2)) * (U : ZMod (p ^ 2)) - 1) -
+          P ^ 2 * (U : ZMod (p ^ 2)) ^ 2 := by ring
       _ = 1 := by rw [hKU, hP2]; ring
-  rw [hinv]
-  exact odd_power_first_order P U m hP2
+  let A : (ZMod (p ^ 2))ˣ :=
+    oneAddSqZeroUnit (P * (U : ZMod (p ^ 2))) (by
+      rw [mul_pow, hP2, zero_mul])
+  have hVunit : V = (-1 : (ZMod (p ^ 2))ˣ) * U * A := by
+    apply Units.ext
+    rw [hVval, hinv]
+    change
+      -(U : ZMod (p ^ 2)) - P * (U : ZMod (p ^ 2)) ^ 2 =
+        (-1 : ZMod (p ^ 2)) * (U : ZMod (p ^ 2)) *
+          (1 + P * (U : ZMod (p ^ 2)))
+    ring
+  change (((V ^ (2 * m + 3) : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2))) = _
+  rw [hVunit]
+  exact odd_zpow_first_order P U m hP2
 
-/-- Pairing `k` with `p-k` for every exponent `2m+3`. -/
-lemma harmonic_pairing_odd {m p : ℕ} [Fact p.Prime] :
-    2 * harmonicMod p (p ^ 2) (2 * m + 3) =
-      -((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-        harmonicMod p (p ^ 2) (2 * m + 4) := by
-  let s := Finset.Icc 1 (p - 1)
+/-- Pairing k with p-k for every exponent 2m+3. -/
+lemma harmonic_pairing_odd {m : ℤ} {p : ℕ} [Fact p.Prime] :
+    2 * harmonicMod p 2 (2 * m + 3) =
+      -((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+        harmonicMod p 2 (2 * m + 4) := by
   have hperm :
-      (∑ k ∈ s,
-        ((((p - k : ℕ) : ZMod (p ^ 2))⁻¹) ^ (2 * m + 3))) =
-        harmonicMod p (p ^ 2) (2 * m + 3) := by
-    rw [harmonicMod, Finset.sum_subtype s (fun _ => Iff.rfl)]
-    rw [Finset.sum_subtype s (fun _ => Iff.rfl)]
+      (∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+        ((((representativeUnit p 2 (reflectionEquiv p k))⁻¹) ^
+          (2 * m + 3) : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2))) =
+        harmonicMod p 2 (2 * m + 3) := by
+    rw [harmonicMod]
     apply Fintype.sum_equiv (reflectionEquiv p)
     intro k
     rfl
   have hrel :
-      harmonicMod p (p ^ 2) (2 * m + 3) =
-        -harmonicMod p (p ^ 2) (2 * m + 3) -
-          ((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-            harmonicMod p (p ^ 2) (2 * m + 4) := by
+      harmonicMod p 2 (2 * m + 3) =
+        -harmonicMod p 2 (2 * m + 3) -
+          ((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+            harmonicMod p 2 (2 * m + 4) := by
     calc
-      harmonicMod p (p ^ 2) (2 * m + 3) =
-          ∑ k ∈ s, ((((p - k : ℕ) : ZMod (p ^ 2))⁻¹) ^
-            (2 * m + 3)) := hperm.symm
-      _ = ∑ k ∈ s,
-          (-((k : ZMod (p ^ 2))⁻¹) ^ (2 * m + 3) -
-            ((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-              ((k : ZMod (p ^ 2))⁻¹) ^ (2 * m + 4)) := by
+      harmonicMod p 2 (2 * m + 3) =
+          ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+            ((((representativeUnit p 2 (reflectionEquiv p k))⁻¹) ^
+              (2 * m + 3) : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) :=
+                hperm.symm
+      _ = ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+          (-((((representativeUnit p 2 k)⁻¹) ^ (2 * m + 3) :
+              (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) -
+            ((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+              ((((representativeUnit p 2 k)⁻¹) ^ (2 * m + 4) :
+                (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2))) := by
           apply Finset.sum_congr rfl
-          intro k hk
-          exact paired_inverse_odd hk
-      _ = -harmonicMod p (p ^ 2) (2 * m + 3) -
-          ((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-            harmonicMod p (p ^ 2) (2 * m + 4) := by
+          intro k _
+          exact paired_inverse_odd k
+      _ = -harmonicMod p 2 (2 * m + 3) -
+          ((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+            harmonicMod p 2 (2 * m + 4) := by
           simp only [Finset.sum_sub_distrib, Finset.sum_neg_distrib]
           rw [← Finset.mul_sum]
           rfl
   calc
-    2 * harmonicMod p (p ^ 2) (2 * m + 3) =
-        harmonicMod p (p ^ 2) (2 * m + 3) +
-          harmonicMod p (p ^ 2) (2 * m + 3) := by ring
-    _ = harmonicMod p (p ^ 2) (2 * m + 3) +
-        (-harmonicMod p (p ^ 2) (2 * m + 3) -
-          ((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-            harmonicMod p (p ^ 2) (2 * m + 4)) :=
-      congrArg (fun x => harmonicMod p (p ^ 2) (2 * m + 3) + x) hrel
-    _ = -((2 * m + 3 : ℕ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
-        harmonicMod p (p ^ 2) (2 * m + 4) := by ring
+    2 * harmonicMod p 2 (2 * m + 3) =
+        harmonicMod p 2 (2 * m + 3) +
+          harmonicMod p 2 (2 * m + 3) := by ring
+    _ = harmonicMod p 2 (2 * m + 3) +
+        (-harmonicMod p 2 (2 * m + 3) -
+          ((2 * m + 3 : ℤ) : ZMod (p ^ 2)) * (p : ZMod (p ^ 2)) *
+            harmonicMod p 2 (2 * m + 4)) :=
+      congrArg (fun x => harmonicMod p 2 (2 * m + 3) + x) hrel
+    _ = _ := by ring
 
-/-- Vanishing modulo `p²` can be lifted after multiplication by `p²`. -/
+
+
+/-- Vanishing modulo p² can be lifted after multiplication by p². -/
 lemma mul_p_sq_eq_zero_of_cast_eq_zero {p : ℕ} [Fact p.Prime]
     (x : ZMod (p ^ 4))
     (hx :
@@ -646,60 +771,62 @@ lemma mul_p_sq_eq_zero_of_cast_eq_zero {p : ℕ} [Fact p.Prime]
         ring
     _ = 0 := by rw [ZMod.natCast_self, zero_mul]
 
-/-- Reduction from `p⁴` to `p²` preserves the relevant inverses. -/
-lemma castHom_inverse_Icc_sq {p k : ℕ} [Fact p.Prime]
-    (hk : k ∈ Finset.Icc 1 (p - 1)) :
-    (ZMod.castHom
-      (show p ^ 2 ∣ p ^ 4 by
-        use p ^ 2
-        ring)
-      (ZMod (p ^ 2))) (((k : ZMod (p ^ 4))⁻¹)) =
-        ((k : ZMod (p ^ 2))⁻¹) := by
-  let f : ZMod (p ^ 4) →+* ZMod (p ^ 2) :=
-    ZMod.castHom
-      (show p ^ 2 ∣ p ^ 4 by
-        use p ^ 2
-        ring)
-      (ZMod (p ^ 2))
-  have hku : IsUnit (k : ZMod (p ^ 4)) := by
-    rw [ZMod.isUnit_iff_coprime]
-    exact (mem_Icc_coprime_prime hk).pow_right 4
-  symm
-  apply ZMod.inv_eq_of_mul_eq_one
+/-- Reduction maps integer powers of representative units compatibly. -/
+lemma castHom_representativeUnit_inv_zpow {p a b : ℕ} [Fact p.Prime]
+    (hba : p ^ b ∣ p ^ a)
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) (z : ℤ) :
+    (ZMod.castHom hba (ZMod (p ^ b)))
+        ((((representativeUnit p a k)⁻¹) ^ z : (ZMod (p ^ a))ˣ) :
+          ZMod (p ^ a)) =
+      ((((representativeUnit p b k)⁻¹) ^ z : (ZMod (p ^ b))ˣ) :
+        ZMod (p ^ b)) := by
+  let f : ZMod (p ^ a) →+* ZMod (p ^ b) :=
+    ZMod.castHom hba (ZMod (p ^ b))
+  let F : (ZMod (p ^ a))ˣ →* (ZMod (p ^ b))ˣ :=
+    Units.map f.toMonoidHom
+  have hunit : F (representativeUnit p a k) = representativeUnit p b k := by
+    apply Units.ext
+    change f (k.1 : ZMod (p ^ a)) = (k.1 : ZMod (p ^ b))
+    simp [f]
+  change f
+      ((((representativeUnit p a k)⁻¹) ^ z : (ZMod (p ^ a))ˣ) :
+        ZMod (p ^ a)) = _
   calc
-    (k : ZMod (p ^ 2)) * f (((k : ZMod (p ^ 4))⁻¹)) =
-        f (k : ZMod (p ^ 4)) * f (((k : ZMod (p ^ 4))⁻¹)) := by
-          rw [map_natCast]
-    _ = f ((k : ZMod (p ^ 4)) * ((k : ZMod (p ^ 4))⁻¹)) := by
-      rw [map_mul]
-    _ = f 1 := by rw [ZMod.mul_inv_of_unit _ hku]
-    _ = 1 := by rw [map_one]
+    f ((((representativeUnit p a k)⁻¹) ^ z :
+          (ZMod (p ^ a))ˣ) : ZMod (p ^ a)) =
+      ((F (((representativeUnit p a k)⁻¹) ^ z) :
+        (ZMod (p ^ b))ˣ) : ZMod (p ^ b)) := rfl
+    _ = (((F ((representativeUnit p a k)⁻¹)) ^ z :
+        (ZMod (p ^ b))ˣ) : ZMod (p ^ b)) := by rw [map_zpow]
+    _ = _ := by rw [map_inv, hunit]
 
-/-- Generalized harmonic sums commute with reduction from `p⁴` to `p²`. -/
-lemma castHom_harmonic_sq {p r : ℕ} [Fact p.Prime] :
+/-- Harmonic sums commute with reduction from p⁴ to p². -/
+lemma castHom_harmonic_sq {p : ℕ} [Fact p.Prime] (r : ℤ) :
     (ZMod.castHom
       (show p ^ 2 ∣ p ^ 4 by
         use p ^ 2
         ring)
-      (ZMod (p ^ 2))) (harmonicMod p (p ^ 4) r) =
-        harmonicMod p (p ^ 2) r := by
-  simp only [harmonicMod, map_sum, map_pow]
+      (ZMod (p ^ 2))) (harmonicMod p 4 r) =
+        harmonicMod p 2 r := by
+  rw [harmonicMod, harmonicMod, map_sum]
   apply Finset.sum_congr rfl
-  intro k hk
-  rw [castHom_inverse_Icc_sq hk]
+  intro k _
+  exact castHom_representativeUnit_inv_zpow _ k r
 
-/-- The generalized pairing relation at modulus `p⁴`, with its factor `p²`. -/
-theorem generalized_harmonic_pairing_mul_p_sq {m p : ℕ} [Fact p.Prime] :
+/-- The harmonic pairing at modulus p⁴, with its factor p². -/
+theorem generalized_harmonic_pairing_mul_p_sq {m : ℤ} {p : ℕ}
+    [Fact p.Prime] :
     (p : ZMod (p ^ 4)) ^ 2 *
-      (2 * harmonicMod p (p ^ 4) (2 * m + 3) +
-        ((2 * m + 3 : ℕ) : ZMod (p ^ 4)) * (p : ZMod (p ^ 4)) *
-          harmonicMod p (p ^ 4) (2 * m + 4)) = 0 := by
+      (2 * harmonicMod p 4 (2 * m + 3) +
+        ((2 * m + 3 : ℤ) : ZMod (p ^ 4)) * (p : ZMod (p ^ 4)) *
+          harmonicMod p 4 (2 * m + 4)) = 0 := by
   apply mul_p_sq_eq_zero_of_cast_eq_zero
-  simp only [map_add, map_mul, map_natCast, map_ofNat, castHom_harmonic_sq]
+  simp only [map_add, map_mul, map_intCast, map_natCast, map_ofNat,
+    castHom_harmonic_sq]
   rw [harmonic_pairing_odd]
   ring
 
-/-- The coefficient form of the key reduction, valid for all odd exponents. -/
+/-- The coefficient form of the key reduction. -/
 lemma key_reduction_scaled_general {R : Type*} [CommRing R]
     (P Hr He S c : R)
     (hS : S = P ^ 2 * Hr - 2 * P ^ 3 * He)
@@ -712,94 +839,138 @@ lemma key_reduction_scaled_general {R : Type*} [CommRing R]
           (c + 4) * P ^ 3 * He := by ring
     _ = -(c + 4) * P ^ 3 * He := by rw [hH]; ring
 
-/--
-The central generalized congruence:
-`2S = -(2m+7)p³ H_(2m+4)` in `ZMod (p⁴)`.
--/
-theorem generalized_key_congruence {m p : ℕ} [Fact p.Prime] :
-    2 * generalizedBinomialSumMod m p (p ^ 4) =
-      -((2 * m + 7 : ℕ) : ZMod (p ^ 4)) *
+/-- The central congruence for an arbitrary integer parameter. -/
+theorem generalized_key_congruence {m : ℤ} {p : ℕ} [Fact p.Prime] :
+    2 * generalizedBinomialSumMod m p 4 =
+      -((2 * m + 7 : ℤ) : ZMod (p ^ 4)) *
         (p : ZMod (p ^ 4)) ^ 3 *
-          harmonicMod p (p ^ 4) (2 * m + 4) := by
+          harmonicMod p 4 (2 * m + 4) := by
   let P : ZMod (p ^ 4) := p
-  let Hr := harmonicMod p (p ^ 4) (2 * m + 3)
-  let He := harmonicMod p (p ^ 4) (2 * m + 4)
-  let S := generalizedBinomialSumMod m p (p ^ 4)
+  let Hr := harmonicMod p 4 (2 * m + 3)
+  let He := harmonicMod p 4 (2 * m + 4)
+  let S := generalizedBinomialSumMod m p 4
   have hS : S = P ^ 2 * Hr - 2 * P ^ 3 * He :=
     generalizedBinomialSumMod_reduction
   have hH :
       P ^ 2 *
-        (2 * Hr + ((2 * m + 3 : ℕ) : ZMod (p ^ 4)) * P * He) = 0 :=
+        (2 * Hr + ((2 * m + 3 : ℤ) : ZMod (p ^ 4)) * P * He) = 0 :=
     generalized_harmonic_pairing_mul_p_sq
   have hkey := key_reduction_scaled_general P Hr He S
-    (((2 * m + 3 : ℕ) : ZMod (p ^ 4))) hS hH
+    (((2 * m + 3 : ℤ) : ZMod (p ^ 4))) hS hH
   dsimp [S, P, He] at hkey ⊢
   convert hkey using 1
   all_goals
     push_cast
-    ring
+    ring_nf
 
-/-! ### The finite exceptional set -/
 
-/-- Rewrite an arbitrary inverse-power sum as a sum over the unit group. -/
-lemma sum_Icc_inverse_pow_eq_units (p e : ℕ) [Fact p.Prime] :
-    (∑ k ∈ Finset.Icc 1 (p - 1), ((k : ZMod p)⁻¹) ^ e) =
-      ∑ x : (ZMod p)ˣ, ((x : ZMod p)⁻¹) ^ e := by
-  rw [Finset.sum_subtype (Finset.Icc 1 (p - 1)) (fun _ => Iff.rfl)]
-  apply Fintype.sum_equiv (residueUnitEquiv p)
-  intro k
-  change ((k.1 : ZMod p)⁻¹) ^ e =
-    (((ZMod.unitOfCoprime k.1 (mem_Icc_coprime_prime k.2) : (ZMod p)ˣ) :
-      ZMod p)⁻¹) ^ e
-  rw [ZMod.coe_unitOfCoprime]
 
-/-- Inversion permutes the units for every exponent. -/
-lemma sum_inverse_powers_units (p e : ℕ) [Fact p.Prime] :
-    (∑ x : (ZMod p)ˣ, ((x : ZMod p)⁻¹) ^ e) =
-      ∑ x : (ZMod p)ˣ, (x : ZMod p) ^ e := by
+/-! ### The finite-field obstruction -/
+
+/-- Integer powers over the unit group reduce to a natural power sum. -/
+lemma sum_units_zpow_eq_sum_pow_natAbs {p : ℕ} [Fact p.Prime] (e : ℤ) :
+    (∑ x : (ZMod p)ˣ, (((x ^ e : (ZMod p)ˣ) : ZMod p))) =
+      ∑ x : (ZMod p)ˣ, (x : ZMod p) ^ e.natAbs := by
+  cases e with
+  | ofNat n =>
+      simp only [Int.ofNat_eq_natCast, zpow_natCast,
+        Units.val_pow_eq_pow_val, Int.natAbs_natCast]
+  | negSucc n =>
+      apply Fintype.sum_equiv (Equiv.inv ((ZMod p)ˣ))
+      intro x
+      simp only [Equiv.inv_apply, Int.natAbs_negSucc, zpow_negSucc]
+      change
+        (((x ^ (n + 1))⁻¹ : (ZMod p)ˣ) : ZMod p) =
+          (((x⁻¹ : (ZMod p)ˣ) : ZMod p)) ^ (n + 1)
+      rw [← Units.val_pow_eq_pow_val]
+      congr 1
+
+/-- A unit-group integer power sum vanishes unless the group order divides
+the exponent. -/
+theorem sum_units_zpow_eq_zero_of_not_dvd {p : ℕ} [Fact p.Prime]
+    {e : ℤ} (hnot : ¬ ((p - 1 : ℕ) : ℤ) ∣ e) :
+    (∑ x : (ZMod p)ˣ, (((x ^ e : (ZMod p)ˣ) : ZMod p))) = 0 := by
+  rw [sum_units_zpow_eq_sum_pow_natAbs]
+  rw [FiniteField.sum_pow_units]
+  have hnat : ¬ p - 1 ∣ e.natAbs := by
+    simpa only [Int.natCast_dvd] using hnot
+  simp only [ZMod.card, hnat, ↓reduceIte]
+
+/-- Inversion permutes the units for every integer exponent. -/
+lemma sum_inverse_zpowers_units (p : ℕ) [Fact p.Prime] (e : ℤ) :
+    (∑ x : (ZMod p)ˣ,
+      (((((x⁻¹ : (ZMod p)ˣ) ^ e : (ZMod p)ˣ)) : ZMod p))) =
+      ∑ x : (ZMod p)ˣ, (((x ^ e : (ZMod p)ˣ) : ZMod p)) := by
   apply Fintype.sum_equiv (Equiv.inv ((ZMod p)ˣ))
   intro x
-  simp only [Equiv.inv_apply, Units.val_inv_eq_inv_val]
+  rfl
 
-/-- A power sum over the units vanishes unless the group order divides
-the exponent. -/
-theorem sum_powers_units_eq_zero_of_not_dvd {p e : ℕ} [Fact p.Prime]
-    (hnot : ¬ p - 1 ∣ e) :
-    (∑ x : (ZMod p)ˣ, ((x : (ZMod p)ˣ) : ZMod p) ^ e) = 0 := by
-  rw [FiniteField.sum_pow_units]
-  simp only [ZMod.card, hnot, ↓reduceIte]
+/-- The harmonic sum in the prime field. -/
+def harmonicModPrime (p : ℕ) [Fact p.Prime] (e : ℤ) : ZMod p :=
+  ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+    (((((ZMod.unitOfCoprime k.1 (mem_Icc_coprime_prime k.2))⁻¹) ^ e :
+      (ZMod p)ˣ) : ZMod p))
 
-/-- The corresponding generalized harmonic sum vanishes modulo `p`. -/
-theorem harmonic_eq_zero_mod_prime {p e : ℕ} [Fact p.Prime]
-    (hnot : ¬ p - 1 ∣ e) :
-    harmonicMod p p e = 0 := by
-  rw [harmonicMod, sum_Icc_inverse_pow_eq_units,
-    sum_inverse_powers_units]
-  exact sum_powers_units_eq_zero_of_not_dvd hnot
+/-- The harmonic sum vanishes in the prime field under the
+finite-field condition. -/
+theorem harmonicPrime_eq_zero {p : ℕ} [Fact p.Prime] {e : ℤ}
+    (hnot : ¬ ((p - 1 : ℕ) : ℤ) ∣ e) :
+    harmonicModPrime p e = 0 := by
+  rw [harmonicModPrime]
+  calc
+    (∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+      (((((ZMod.unitOfCoprime k.1 (mem_Icc_coprime_prime k.2))⁻¹) ^ e :
+        (ZMod p)ˣ) : ZMod p))) =
+      ∑ x : (ZMod p)ˣ,
+        (((((x⁻¹ : (ZMod p)ˣ) ^ e : (ZMod p)ˣ)) : ZMod p)) := by
+          apply Fintype.sum_equiv (residueUnitEquiv p)
+          intro k
+          rfl
+    _ = ∑ x : (ZMod p)ˣ, (((x ^ e : (ZMod p)ˣ) : ZMod p)) :=
+      sum_inverse_zpowers_units p e
+    _ = 0 := sum_units_zpow_eq_zero_of_not_dvd hnot
 
-/-- Reduction from `p⁴` to `p` commutes with every harmonic sum. -/
-lemma castHom_harmonic {p e : ℕ} [Fact p.Prime] :
+
+/-- Reduction from p⁴ to p commutes with every harmonic sum. -/
+lemma castHom_harmonic_prime {p : ℕ} [Fact p.Prime] (e : ℤ) :
     (ZMod.castHom (show p ∣ p ^ 4 by exact dvd_pow_self p (by norm_num))
-      (ZMod p)) (harmonicMod p (p ^ 4) e) =
-        harmonicMod p p e := by
-  simp only [harmonicMod, map_sum, map_pow]
+      (ZMod p)) (harmonicMod p 4 e) =
+        harmonicModPrime p e := by
+  let f : ZMod (p ^ 4) →+* ZMod p :=
+    ZMod.castHom (show p ∣ p ^ 4 by exact dvd_pow_self p (by norm_num))
+      (ZMod p)
+  let F : (ZMod (p ^ 4))ˣ →* (ZMod p)ˣ := Units.map f.toMonoidHom
+  rw [harmonicMod, harmonicModPrime, map_sum]
   apply Finset.sum_congr rfl
-  intro k hk
-  rw [castHom_inverse_Icc hk]
+  intro k _
+  let K4 : (ZMod (p ^ 4))ˣ := representativeUnit p 4 k
+  let Kp : (ZMod p)ˣ :=
+    ZMod.unitOfCoprime k.1 (mem_Icc_coprime_prime k.2)
+  have hunit : F K4 = Kp := by
+    apply Units.ext
+    change f (k.1 : ZMod (p ^ 4)) = (k.1 : ZMod p)
+    simp [f]
+  change f (((K4⁻¹) ^ e : (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) =
+    ((((Kp⁻¹) ^ e : (ZMod p)ˣ) : ZMod p))
+  calc
+    f ((((K4⁻¹) ^ e : (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4))) =
+      ((F ((K4⁻¹) ^ e) : (ZMod p)ˣ) : ZMod p) := rfl
+    _ = (((F K4⁻¹) ^ e : (ZMod p)ˣ) : ZMod p) := by rw [map_zpow]
+    _ = _ := by rw [map_inv, hunit]
 
-/-- Finite-field vanishing lifted to `ZMod (p⁴)`. -/
-theorem harmonic_mul_p_cube_eq_zero_of_not_dvd {p e : ℕ} [Fact p.Prime]
-    (hnot : ¬ p - 1 ∣ e) :
-    (p : ZMod (p ^ 4)) ^ 3 * harmonicMod p (p ^ 4) e = 0 := by
+/-- Finite-field vanishing lifted to ZMod (p⁴). -/
+theorem harmonic_mul_p_cube_eq_zero_of_not_dvd {p : ℕ} [Fact p.Prime]
+    {e : ℤ} (hnot : ¬ ((p - 1 : ℕ) : ℤ) ∣ e) :
+    (p : ZMod (p ^ 4)) ^ 3 * harmonicMod p 4 e = 0 := by
   apply mul_p_cube_eq_zero_of_cast_eq_zero
-  rw [castHom_harmonic]
-  exact harmonic_eq_zero_mod_prime hnot
+  rw [castHom_harmonic_prime]
+  exact harmonicPrime_eq_zero hnot
 
-/-- If `p` divides a coefficient, that coefficient times `p³` vanishes
-modulo `p⁴`. -/
-lemma coefficient_mul_p_cube_eq_zero_of_dvd {p c : ℕ}
-    (hpc : p ∣ c) (x : ZMod (p ^ 4)) :
-    ((c : ℕ) : ZMod (p ^ 4)) * (p : ZMod (p ^ 4)) ^ 3 * x = 0 := by
+/-- If p divides an integer coefficient, its product with p³ vanishes
+modulo p⁴. -/
+lemma coefficient_mul_p_cube_eq_zero_of_dvd {p : ℕ} {c : ℤ}
+    (hpc : (p : ℤ) ∣ c) (x : ZMod (p ^ 4)) :
+    (c : ZMod (p ^ 4)) * (p : ZMod (p ^ 4)) ^ 3 * x = 0 := by
   rcases hpc with ⟨q, hq⟩
   rw [hq]
   push_cast
@@ -811,7 +982,7 @@ lemma coefficient_mul_p_cube_eq_zero_of_dvd {p c : ℕ}
         ring
     _ = 0 := by rw [ZMod.natCast_self]; ring
 
-/-- Two is a unit modulo `p⁴` for every odd prime `p`. -/
+/-- Two is a unit modulo p⁴ for every odd prime p. -/
 lemma two_isUnit_mod_prime_four {p : ℕ} [Fact p.Prime] (hp2 : p ≠ 2) :
     IsUnit (2 : ZMod (p ^ 4)) := by
   have hnot : ¬ 2 ∣ p := by
@@ -823,26 +994,24 @@ lemma two_isUnit_mod_prime_four {p : ℕ} [Fact p.Prime] (hp2 : p ≠ 2) :
   rw [ZMod.isUnit_iff_coprime]
   exact ((Nat.prime_two.coprime_iff_not_dvd).mpr hnot).pow_right 4
 
-/--
-The generalized modular sum vanishes whenever either the group-order
-obstruction is absent or the coefficient `2m+7` supplies an extra factor
-of `p`.
--/
-theorem generalizedBinomialSumMod_eq_zero {m p : ℕ} [Fact p.Prime]
-    (hp2 : p ≠ 2)
-    (hgood : (¬ p - 1 ∣ 2 * m + 4) ∨ p ∣ 2 * m + 7) :
-    generalizedBinomialSumMod m p (p ^ 4) = 0 := by
+/-- The modular sum vanishes under the stated arithmetic condition. -/
+theorem generalizedBinomialSumMod_eq_zero {m : ℤ} {p : ℕ}
+    [Fact p.Prime] (hp2 : p ≠ 2)
+    (hgood :
+      (¬ ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4) ∨
+        (p : ℤ) ∣ 2 * m + 7) :
+    generalizedBinomialSumMod m p 4 = 0 := by
   let P : ZMod (p ^ 4) := p
-  let H := harmonicMod p (p ^ 4) (2 * m + 4)
-  let S := generalizedBinomialSumMod m p (p ^ 4)
+  let H := harmonicMod p 4 (2 * m + 4)
+  let S := generalizedBinomialSumMod m p 4
   have hright :
-      ((2 * m + 7 : ℕ) : ZMod (p ^ 4)) * P ^ 3 * H = 0 := by
+      ((2 * m + 7 : ℤ) : ZMod (p ^ 4)) * P ^ 3 * H = 0 := by
     rcases hgood with hnot | hdiv
     · have hH : P ^ 3 * H = 0 :=
         harmonic_mul_p_cube_eq_zero_of_not_dvd hnot
       calc
-        ((2 * m + 7 : ℕ) : ZMod (p ^ 4)) * P ^ 3 * H =
-            ((2 * m + 7 : ℕ) : ZMod (p ^ 4)) * (P ^ 3 * H) := by ring
+        ((2 * m + 7 : ℤ) : ZMod (p ^ 4)) * P ^ 3 * H =
+            ((2 * m + 7 : ℤ) : ZMod (p ^ 4)) * (P ^ 3 * H) := by ring
         _ = 0 := by rw [hH, mul_zero]
     · exact coefficient_mul_p_cube_eq_zero_of_dvd hdiv H
   have h2 : IsUnit (2 : ZMod (p ^ 4)) :=
@@ -850,37 +1019,30 @@ theorem generalizedBinomialSumMod_eq_zero {m p : ℕ} [Fact p.Prime]
   apply h2.mul_left_cancel
   calc
     2 * S =
-        -((2 * m + 7 : ℕ) : ZMod (p ^ 4)) * P ^ 3 * H :=
+        -((2 * m + 7 : ℤ) : ZMod (p ^ 4)) * P ^ 3 * H :=
       generalized_key_congruence
-    _ = -(((2 * m + 7 : ℕ) : ZMod (p ^ 4)) * P ^ 3 * H) := by ring
+    _ = -(((2 * m + 7 : ℤ) : ZMod (p ^ 4)) * P ^ 3 * H) := by ring
     _ = 0 := by rw [hright, neg_zero]
     _ = 2 * 0 := by ring
 
-/--
-The exceptional primes are stored in a finite range.  Their defining
-condition is `p-1 ∣ 2m+4` but `p ∤ 2m+7`.
--/
-def exceptionalPrimes (m : ℕ) : Finset ℕ :=
-  (Finset.range (2 * m + 6)).filter fun p =>
-    p.Prime ∧ p - 1 ∣ 2 * m + 4 ∧ ¬ p ∣ 2 * m + 7
+/-- The exceptional primes for the parameter m. -/
+def exceptionalPrimes (m : ℤ) : Set ℕ :=
+  {p | p.Prime ∧
+    ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4 ∧
+    ¬ (p : ℤ) ∣ 2 * m + 7}
 
-theorem mem_exceptionalPrimes_iff {m p : ℕ} :
+theorem mem_exceptionalPrimes_iff {m : ℤ} {p : ℕ} :
     p ∈ exceptionalPrimes m ↔
-      p.Prime ∧ p - 1 ∣ 2 * m + 4 ∧ ¬ p ∣ 2 * m + 7 := by
-  rw [exceptionalPrimes, Finset.mem_filter, Finset.mem_range]
-  constructor
-  · exact fun h => h.2
-  · intro h
-    refine ⟨?_, h⟩
-    have hsub : p - 1 ≤ 2 * m + 4 :=
-      Nat.le_of_dvd (by omega) h.2.1
-    have hp1 : 1 ≤ p := h.1.one_le
-    omega
+      p.Prime ∧
+        ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4 ∧
+        ¬ (p : ℤ) ∣ 2 * m + 7 := by
+  rfl
 
-/-- Every prime outside `exceptionalPrimes m` has vanishing modular sum. -/
+/-- Every prime outside the exceptional set has vanishing modular sum. -/
 theorem generalizedBinomialSumMod_eq_zero_of_not_mem
-    {m p : ℕ} [Fact p.Prime] (hpnot : p ∉ exceptionalPrimes m) :
-    generalizedBinomialSumMod m p (p ^ 4) = 0 := by
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (hpnot : p ∉ exceptionalPrimes m) :
+    generalizedBinomialSumMod m p 4 = 0 := by
   have hp2 : p ≠ 2 := by
     intro hp
     subst p
@@ -890,8 +1052,10 @@ theorem generalizedBinomialSumMod_eq_zero_of_not_mem
     intro hdiv
     rcases hdiv with ⟨q, hq⟩
     omega
-  have hgood : (¬ p - 1 ∣ 2 * m + 4) ∨ p ∣ 2 * m + 7 := by
-    by_cases hdiv : p - 1 ∣ 2 * m + 4
+  have hgood :
+      (¬ ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4) ∨
+        (p : ℤ) ∣ 2 * m + 7 := by
+    by_cases hdiv : ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4
     · right
       by_contra hcoeff
       apply hpnot
@@ -900,178 +1064,232 @@ theorem generalizedBinomialSumMod_eq_zero_of_not_mem
     · exact Or.inl hdiv
   exact generalizedBinomialSumMod_eq_zero hp2 hgood
 
+
 /-! ### Passage to the reduced rational numerator -/
 
-/-- A common denominator for exponent `2m+1`. -/
-def generalizedCommonDen (m p : ℕ) : ℕ :=
-  (Nat.factorial (p - 1)) ^ (2 * m + 1)
+/-- Splitting an integer exponent into numerator and denominator parts. -/
+lemma rat_zpow_neg_eq_split (x : ℚ) (d : ℤ) :
+    x ^ (-d) = x ^ (-d).toNat / x ^ d.toNat := by
+  cases d with
+  | ofNat n =>
+      rw [Int.ofNat_eq_natCast, zpow_neg, zpow_natCast]
+      simp
+  | negSucc n =>
+      rw [Int.negSucc_eq]
+      simp only [neg_neg]
+      have hpos : (n : ℤ) + 1 = ((n + 1 : ℕ) : ℤ) := by omega
+      rw [hpos, zpow_natCast]
+      have hzero : (-((n + 1 : ℕ) : ℤ)).toNat = 0 :=
+        Int.toNat_of_nonpos (by omega)
+      rw [Int.toNat_natCast, hzero, pow_zero, div_one]
 
-/-- The numerator before cancellation of the generalized common denominator. -/
-def generalizedCommonNumerator (m p : ℕ) : ℕ :=
-  ∑ k ∈ Finset.Icc 1 (p - 1),
-    (((p - 1).choose k * (p - 1 + k).choose k) ^ 2) *
-      (generalizedCommonDen m p / k ^ (2 * m + 1))
+/-- The denominator exponent contributed by 2m+1. -/
+def denominatorExponent (m : ℤ) : ℕ := (2 * m + 1).toNat
 
-/-- Each denominator power divides the generalized common denominator. -/
-lemma odd_power_dvd_generalizedCommonDen {m p k : ℕ}
+/-- The numerator exponent contributed by 2m+1. -/
+def numeratorExponent (m : ℤ) : ℕ := (-(2 * m + 1)).toNat
+
+/-- A common denominator for the rational sum. -/
+def generalizedCommonDen (m : ℤ) (p : ℕ) : ℕ :=
+  (Nat.factorial (p - 1)) ^ denominatorExponent m
+
+/-- The numerator before cancellation of the common denominator. -/
+def generalizedCommonNumerator (m : ℤ) (p : ℕ) : ℕ :=
+  ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+    (((p - 1).choose k.1 * (p - 1 + k.1).choose k.1) ^ 2) *
+      k.1 ^ numeratorExponent m *
+      (generalizedCommonDen m p / k.1 ^ denominatorExponent m)
+
+/-- Each denominator power divides the common denominator. -/
+lemma denominator_power_dvd_generalizedCommonDen {m : ℤ} {p k : ℕ}
     (hk : k ∈ Finset.Icc 1 (p - 1)) :
-    k ^ (2 * m + 1) ∣ generalizedCommonDen m p := by
+    k ^ denominatorExponent m ∣ generalizedCommonDen m p := by
   rw [generalizedCommonDen]
   exact pow_dvd_pow_of_dvd
     (Nat.dvd_factorial (Finset.mem_Icc.mp hk).1
-      (Finset.mem_Icc.mp hk).2) (2 * m + 1)
+      (Finset.mem_Icc.mp hk).2) (denominatorExponent m)
 
-/-- One generalized rational summand over the explicit common denominator. -/
-lemma generalized_rational_summand_eq_commonDen {m p k : ℕ}
+/-- One rational summand over the explicit common denominator. -/
+lemma generalized_rational_summand_eq_commonDen {m : ℤ} {p k : ℕ}
     (hk : k ∈ Finset.Icc 1 (p - 1)) :
-    (((p - 1).choose k : ℚ) ^ 2 *
-        ((p - 1 + k).choose k : ℚ) ^ 2) /
-          (k : ℚ) ^ (2 * m + 1) =
+    ((p - 1).choose k : ℚ) ^ 2 *
+        ((p - 1 + k).choose k : ℚ) ^ 2 *
+          (k : ℚ) ^ (-(2 * m + 1)) =
       ((((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-          (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) : ℚ) /
+          k ^ numeratorExponent m *
+          (generalizedCommonDen m p / k ^ denominatorExponent m) : ℕ) : ℚ) /
         (generalizedCommonDen m p : ℚ) := by
   have hk0 : k ≠ 0 := by
     have := (Finset.mem_Icc.mp hk).1
     omega
   have hD0 : generalizedCommonDen m p ≠ 0 := by
     rw [generalizedCommonDen]
-    exact pow_ne_zero (2 * m + 1) (Nat.factorial_ne_zero _)
+    exact pow_ne_zero _ (Nat.factorial_ne_zero _)
   have hmul :=
     Nat.mul_div_cancel'
-      (odd_power_dvd_generalizedCommonDen (m := m) hk)
+      (denominator_power_dvd_generalizedCommonDen (m := m) hk)
   have hDq :
       (generalizedCommonDen m p : ℚ) =
-        (k : ℚ) ^ (2 * m + 1) *
-          (generalizedCommonDen m p / k ^ (2 * m + 1) : ℕ) := by
+        (k : ℚ) ^ denominatorExponent m *
+          (generalizedCommonDen m p / k ^ denominatorExponent m : ℕ) := by
     exact_mod_cast hmul.symm
+  rw [rat_zpow_neg_eq_split]
+  change
+    ((p - 1).choose k : ℚ) ^ 2 *
+        ((p - 1 + k).choose k : ℚ) ^ 2 *
+          ((k : ℚ) ^ numeratorExponent m /
+            (k : ℚ) ^ denominatorExponent m) = _
   field_simp [hk0, hD0]
   rw [hDq]
   push_cast
   ring
 
-/-- The generalized rational sum over its explicit common denominator. -/
-theorem generalizedSum_eq_commonNumerator_div (m p : ℕ) :
+/-- The rational sum over its explicit common denominator. -/
+theorem generalizedSum_eq_commonNumerator_div (m : ℤ) (p : ℕ) :
     generalizedSum m (p - 1) =
       (generalizedCommonNumerator m p : ℚ) /
         (generalizedCommonDen m p : ℚ) := by
   rw [generalizedSum, generalizedCommonNumerator]
+  rw [Finset.sum_subtype (Finset.Icc 1 (p - 1)) (fun _ => Iff.rfl)]
   calc
-    (∑ k ∈ Finset.Icc 1 (p - 1),
-        (((p - 1).choose k : ℚ) ^ 2 *
-          ((p - 1 + k).choose k : ℚ) ^ 2) /
-            (k : ℚ) ^ (2 * m + 1)) =
-      ∑ k ∈ Finset.Icc 1 (p - 1),
-        ((((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-          (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) : ℚ) /
-            (generalizedCommonDen m p : ℚ) := by
-              apply Finset.sum_congr rfl
-              intro k hk
-              exact generalized_rational_summand_eq_commonDen hk
-    _ = (∑ k ∈ Finset.Icc 1 (p - 1),
-          ((((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-            (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) : ℚ)) /
-        (generalizedCommonDen m p : ℚ) := by
-          simp only [div_eq_mul_inv, Finset.sum_mul]
-    _ = (((∑ k ∈ Finset.Icc 1 (p - 1),
-          ((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-            (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) : ℚ)) /
-        (generalizedCommonDen m p : ℚ) := by
-          push_cast
-          rfl
+    (∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+      (((p - 1).choose k.1 : ℚ) ^ 2 *
+        ((p - 1 + k.1).choose k.1 : ℚ) ^ 2 *
+          (k.1 : ℚ) ^ (-(2 * m + 1)))) =
+      ∑ k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)},
+        (((((p - 1).choose k.1 * (p - 1 + k.1).choose k.1) ^ 2 *
+          k.1 ^ numeratorExponent m *
+          (generalizedCommonDen m p /
+            k.1 ^ denominatorExponent m) : ℕ) : ℚ) /
+              (generalizedCommonDen m p : ℚ)) := by
+          apply Finset.sum_congr rfl
+          intro k _
+          exact generalized_rational_summand_eq_commonDen k.2
+    _ = _ := by
+      simp only [div_eq_mul_inv]
+      push_cast
+      rw [Finset.sum_mul]
 
-/-- Multiplication by the generalized denominator removes one modular
-summand's inverse power. -/
+
+
+/-- Cancelling the denominator part of an integer power leaves its numerator part. -/
+lemma unit_pow_toNat_mul_inv_zpow {G : Type*} [Group G]
+    (K : G) (d : ℤ) :
+    K ^ d.toNat * (K⁻¹) ^ d = K ^ (-d).toNat := by
+  cases d with
+  | ofNat n =>
+      rw [Int.ofNat_eq_natCast, zpow_natCast]
+      simp
+  | negSucc n =>
+      have hzero : (Int.negSucc n).toNat = 0 :=
+        Int.toNat_of_nonpos (by omega)
+      rw [hzero, pow_zero, one_mul]
+      rw [Int.negSucc_eq]
+      simp only [neg_neg]
+      have hpos : (n : ℤ) + 1 = ((n + 1 : ℕ) : ℤ) := by omega
+      rw [hpos, zpow_neg, zpow_natCast, Int.toNat_natCast]
+      simp
+
+/-- Multiplication by the common denominator clears one modular summand. -/
 lemma generalizedCommonDen_mul_binomial_summand
-    {m p k : ℕ} [Fact p.Prime]
-    (hk : k ∈ Finset.Icc 1 (p - 1)) :
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (k : {k : ℕ // k ∈ Finset.Icc 1 (p - 1)}) :
     (generalizedCommonDen m p : ZMod (p ^ 4)) *
-        (((k : ZMod (p ^ 4))⁻¹) ^ (2 * m + 1) *
-          (binomialProduct p k (p ^ 4)) ^ 2) =
-      ((((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-        (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) :
-          ZMod (p ^ 4)) := by
-  let K : ZMod (p ^ 4) := k
-  let U : ZMod (p ^ 4) := K⁻¹
+        (((((representativeUnit p 4 k)⁻¹) ^ (2 * m + 1) :
+            (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4)) *
+          (binomialProduct p k.1 (p ^ 4)) ^ 2) =
+      ((((p - 1).choose k.1 * (p - 1 + k.1).choose k.1) ^ 2 *
+          k.1 ^ numeratorExponent m *
+          (generalizedCommonDen m p /
+            k.1 ^ denominatorExponent m) : ℕ) : ZMod (p ^ 4)) := by
+  let K := representativeUnit p 4 k
+  let U := K⁻¹
+  let V : ZMod (p ^ 4) :=
+    ((U ^ (2 * m + 1) : (ZMod (p ^ 4))ˣ) : ZMod (p ^ 4))
   let B : ZMod (p ^ 4) :=
-    ((p - 1).choose k * (p - 1 + k).choose k : ℕ)
+    ((p - 1).choose k.1 * (p - 1 + k.1).choose k.1 : ℕ)
   let Q : ZMod (p ^ 4) :=
-    (generalizedCommonDen m p / k ^ (2 * m + 1) : ℕ)
-  have hku : IsUnit K := by
-    rw [ZMod.isUnit_iff_coprime]
-    exact (mem_Icc_coprime_prime hk).pow_right 4
-  have hKU : K * U = 1 := ZMod.mul_inv_of_unit K hku
+    (generalizedCommonDen m p /
+      k.1 ^ denominatorExponent m : ℕ)
   have hmul :=
     Nat.mul_div_cancel'
-      (odd_power_dvd_generalizedCommonDen (m := m) hk)
+      (denominator_power_dvd_generalizedCommonDen (m := m) k.2)
   have hDcast :
       (generalizedCommonDen m p : ZMod (p ^ 4)) =
-        K ^ (2 * m + 1) * Q := by
+        (K : ZMod (p ^ 4)) ^ denominatorExponent m * Q := by
     have hcast := congrArg
       (fun n : ℕ => (n : ZMod (p ^ 4))) hmul.symm
     simp only [Nat.cast_mul, Nat.cast_pow] at hcast
-    exact hcast
+    simpa [K, Q, representativeUnit, ZMod.coe_unitOfCoprime] using hcast
   have hBcast :
-      ((p - 1).choose k : ZMod (p ^ 4)) *
-          ((p - 1 + k).choose k : ZMod (p ^ 4)) = B := by
+      ((p - 1).choose k.1 : ZMod (p ^ 4)) *
+          ((p - 1 + k.1).choose k.1 : ZMod (p ^ 4)) = B := by
     dsimp [B]
     push_cast
     rfl
+  have hcancel :
+      (K : ZMod (p ^ 4)) ^ denominatorExponent m * V =
+        (K : ZMod (p ^ 4)) ^ numeratorExponent m := by
+    have h := unit_pow_toNat_mul_inv_zpow K (2 * m + 1)
+    have hval := congrArg
+      (fun W : (ZMod (p ^ 4))ˣ => (W : ZMod (p ^ 4))) h
+    simpa [U, V, denominatorExponent, numeratorExponent] using hval
   rw [binomialProduct, hBcast]
   change
     (generalizedCommonDen m p : ZMod (p ^ 4)) *
-        (U ^ (2 * m + 1) * B ^ 2) =
-      ((((p - 1).choose k * (p - 1 + k).choose k) ^ 2 *
-        (generalizedCommonDen m p / k ^ (2 * m + 1)) : ℕ) :
-          ZMod (p ^ 4))
+      (V * B ^ 2) = _
   push_cast
   rw [hBcast]
   change
     (generalizedCommonDen m p : ZMod (p ^ 4)) *
-      (U ^ (2 * m + 1) * B ^ 2) = B ^ 2 * Q
+      (V * B ^ 2) =
+        B ^ 2 * (K : ZMod (p ^ 4)) ^ numeratorExponent m * Q
   rw [hDcast]
   calc
-    K ^ (2 * m + 1) * Q * (U ^ (2 * m + 1) * B ^ 2) =
-        (K * U) ^ (2 * m + 1) * B ^ 2 * Q := by
-          rw [mul_pow]
-          ring
-    _ = B ^ 2 * Q := by rw [hKU]; ring
+    ((K : ZMod (p ^ 4)) ^ denominatorExponent m * Q) *
+        (V * B ^ 2) =
+      ((K : ZMod (p ^ 4)) ^ denominatorExponent m * V) *
+        B ^ 2 * Q := by ring
+    _ = B ^ 2 * (K : ZMod (p ^ 4)) ^ numeratorExponent m * Q := by
+      rw [hcancel]
+      ring
 
-/-- The generalized common numerator is denominator times modular sum. -/
-theorem generalizedCommonNumerator_cast_eq {m p : ℕ} [Fact p.Prime] :
+/-- The common numerator is the common denominator times the modular sum. -/
+theorem generalizedCommonNumerator_cast_eq {m : ℤ} {p : ℕ}
+    [Fact p.Prime] :
     (generalizedCommonNumerator m p : ZMod (p ^ 4)) =
       (generalizedCommonDen m p : ZMod (p ^ 4)) *
-        generalizedBinomialSumMod m p (p ^ 4) := by
+        generalizedBinomialSumMod m p 4 := by
   rw [generalizedCommonNumerator, generalizedBinomialSumMod,
     Finset.mul_sum]
   push_cast
   apply Finset.sum_congr rfl
-  intro k hk
+  intro k _
   simpa only [Nat.cast_mul, Nat.cast_pow] using
-    (generalizedCommonDen_mul_binomial_summand hk).symm
+    (generalizedCommonDen_mul_binomial_summand k).symm
 
-/-- The explicit generalized numerator vanishes outside the exceptional set. -/
+/-- The common numerator vanishes outside the exceptional set. -/
 theorem generalizedCommonNumerator_cast_eq_zero_of_not_mem
-    {m p : ℕ} [Fact p.Prime] (hpnot : p ∉ exceptionalPrimes m) :
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (hpnot : p ∉ exceptionalPrimes m) :
     (generalizedCommonNumerator m p : ZMod (p ^ 4)) = 0 := by
   rw [generalizedCommonNumerator_cast_eq,
     generalizedBinomialSumMod_eq_zero_of_not_mem hpnot, mul_zero]
 
-/-- The generalized common denominator is a unit modulo `p⁴`. -/
-lemma generalizedCommonDen_isUnit {m p : ℕ} [Fact p.Prime] :
+/-- The common denominator is a unit modulo p⁴. -/
+lemma generalizedCommonDen_isUnit {m : ℤ} {p : ℕ} [Fact p.Prime] :
     IsUnit (generalizedCommonDen m p : ZMod (p ^ 4)) := by
   rw [ZMod.isUnit_iff_coprime, generalizedCommonDen]
   have hlt : p - 1 < p :=
     Nat.sub_lt (show p.Prime from Fact.out).pos (by norm_num)
   exact
     (((show p.Prime from Fact.out).coprime_factorial_of_lt hlt).symm).pow
-      (2 * m + 1) 4
+      (denominatorExponent m) 4
 
-/--
-For every prime outside the explicit finite exceptional set, `p⁴` divides
-the reduced numerator `u m (p-1)`.
--/
+/-- Outside the exceptional set, p⁴ divides the reduced numerator. -/
 theorem u_prime_sub_one_dvd_of_not_mem
-    {m p : ℕ} [Fact p.Prime] (hpnot : p ∉ exceptionalPrimes m) :
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (hpnot : p ∉ exceptionalPrimes m) :
     ((p ^ 4 : ℕ) : ℤ) ∣ u m (p - 1) := by
   let q := generalizedSum m (p - 1)
   let N := generalizedCommonNumerator m p
@@ -1081,7 +1299,7 @@ theorem u_prime_sub_one_dvd_of_not_mem
     exact generalizedSum_eq_commonNumerator_div m p
   have hDnat : D ≠ 0 := by
     dsimp [D, generalizedCommonDen]
-    exact pow_ne_zero (2 * m + 1) (Nat.factorial_ne_zero _)
+    exact pow_ne_zero _ (Nat.factorial_ne_zero _)
   have hDint : (D : ℤ) ≠ 0 := by
     exact_mod_cast hDnat
   rcases Rat.num_den_mk hDint hqdf with ⟨c, hN, hD⟩
@@ -1112,12 +1330,12 @@ theorem u_prime_sub_one_dvd_of_not_mem
   exact
     (ZMod.intCast_zmod_eq_zero_iff_dvd (u m (p - 1)) (p ^ 4)).mp hu0
 
-/--
-Equivalent criterion without mentioning the finite set explicitly.
--/
+/-- The divisibility criterion stated without the exceptional set. -/
 theorem u_prime_sub_one_dvd_of_good
-    {m p : ℕ} [Fact p.Prime]
-    (hgood : (¬ p - 1 ∣ 2 * m + 4) ∨ p ∣ 2 * m + 7) :
+    {m : ℤ} {p : ℕ} [Fact p.Prime]
+    (hgood :
+      (¬ ((p - 1 : ℕ) : ℤ) ∣ 2 * m + 4) ∨
+        (p : ℤ) ∣ 2 * m + 7) :
     ((p ^ 4 : ℕ) : ℤ) ∣ u m (p - 1) := by
   apply u_prime_sub_one_dvd_of_not_mem
   intro hmem

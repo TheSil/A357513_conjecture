@@ -21,7 +21,7 @@
 \begin{document}
 
 \begin{abstract}
-For a nonnegative integer $m$, define
+For an integer $m$, define
 $$
  u_m(n)=\Num\left(
  \sum_{k=1}^{n}\frac{1}{k^{2m+1}}
@@ -29,10 +29,10 @@ $$
  \right),
 $$
 where the numerator is taken after reducing the rational number to
-lowest terms.  The conjecture treated here originates in the record for
-\href{https://oeis.org/A357513}{OEIS A357513}, which states this
-parameterized form.  We determine exactly when $p^4$ divides
-$u_m(p-1)$.
+lowest terms.  The nonnegative-parameter conjecture originates in the
+record for \href{https://oeis.org/A357513}{OEIS A357513}.  We prove the
+corresponding classification for every integer $m$, determining exactly
+when $p^4$ divides $u_m(p-1)$.
 For every prime $p$,
 $$
  p^4\mid u_m(p-1)
@@ -46,7 +46,7 @@ $$
 \section{Statement}
 
 
-For a fixed nonnegative integer $m$, put
+For a fixed integer $m$, put
 $$
  \mathcal E_m=
  \left\{p\ \text{prime}:
@@ -54,7 +54,7 @@ $$
 $$
 
 \begin{theorem}\label{thm:main}
-Let $m\geq0$ be an integer and let $p$ be prime.  Then
+Let $m$ be an integer and let $p$ be prime.  Then
 $$
  p^4\mid u_m(p-1)
  \quad\Longleftrightarrow\quad
@@ -70,11 +70,24 @@ $$
 $$
 \end{theorem}
 
+\begin{remark}
+The exceptional set need not be finite: when $m=-2$, it consists of
+all primes except $3$.  For $m\neq-2$, it is finite.
+\end{remark}
+
 \section{Common denominators}
 
-Fix $m$, and write
+Fix $m\in\Z$, and write
 $$
  d=2m+1.
+$$
+For an integer $t$, put
+$$
+ t_+=\max(t,0),\qquad t_-=\max(-t,0).
+$$
+Thus $t_+$ and $t_-$ are nonnegative integers and, for $k\neq0$,
+$$
+ \frac{1}{k^t}=\frac{k^{t_-}}{k^{t_+}}.
 $$
 For a prime $p$, let
 $$
@@ -88,16 +101,17 @@ $$
 
 The reduced denominator of $S_{m,p}$ is coprime to $p$.  Indeed, set
 $$
- D_m=((p-1)!)^d
+ D_m=((p-1)!)^{d_+}
 $$
 and
 $$
  N_m=\sum_{k=1}^{p-1}
  \left(\binom{p-1}{k}\binom{p-1+k}{k}\right)^2
- \frac{D_m}{k^d}.
+ k^{d_-}\frac{D_m}{k^{d_+}}.
 $$
-Since $k\mid(p-1)!$ for $1\leq k\leq p-1$, every $D_m/k^d$ is an
-integer.  Thus $N_m\in\Z$, $S_{m,p}=N_m/D_m$, and $p\nmid D_m$.
+Since $k\mid(p-1)!$ for $1\leq k\leq p-1$, every
+$D_m/k^{d_+}$ is an integer.  Thus $N_m\in\Z$,
+$S_{m,p}=N_m/D_m$, and $p\nmid D_m$.
 
 Suppose that $S_{m,p}=A/B$ in lowest terms.  Cross-multiplication gives
 $AD_m=N_mB$.  Since $\gcd(A,B)=1$, Euclid's lemma gives $B\mid D_m$.
@@ -126,8 +140,9 @@ give
  =(-1)^k\frac pk\left(1-\frac pk\right)
  \prod_{j=1}^{k-1}\left(1-\frac{p^2}{j^2}\right).
 \end{equation}
-After squaring \eqref{eq:binom-product} and dividing by $k^d$, the
-$k$th summand of $S_{m,p}$ is
+Integer powers of elements of $\Zloc$ are understood whenever the base is
+a unit.  After squaring \eqref{eq:binom-product} and multiplying by
+$k^{-d}$, the $k$th summand of $S_{m,p}$ is
 $$
  \frac{p^2}{k^{d+2}}\left(1-\frac pk\right)^2
  \prod_{j=1}^{k-1}\left(1-\frac{p^2}{j^2}\right)^2.
@@ -147,7 +162,7 @@ Put
 $$
  r=d+2=2m+3,\qquad e=d+3=2m+4
 $$
-and define
+and, for $s\in\Z$, define
 $$
  H_s=\sum_{k=1}^{p-1}\frac1{k^s}\in\Zloc.
 $$
@@ -156,7 +171,11 @@ Summing the preceding congruence gives
  S_{m,p}\equiv p^2H_r-2p^3H_e\pmod{p^4}.
 \end{equation}
 
-The exponent $r$ is odd.  Since $k\mapsto p-k$ permutes
+The exponent $r$ is odd.  The first-order identity
+$$
+ (1-x)^{-r}\equiv1+rx\pmod{x^2}
+$$
+holds for every integer $r$.  Since $k\mapsto p-k$ permutes
 $1,\ldots,p-1$,
 \begin{align*}
  \frac1{(p-k)^r}
@@ -181,7 +200,8 @@ $$
  H_e\equiv\sum_{x\in\Fp^\times}x^{-e}
  =\sum_{x\in\Fp^\times}x^e\pmod p.
 $$
-The standard power-sum evaluation in the cyclic group
+For the integer exponent $e$, the standard power-sum evaluation in the
+cyclic group
 $\Fp^\times$ is
 \begin{equation}\label{eq:power-sum}
  H_e\equiv
